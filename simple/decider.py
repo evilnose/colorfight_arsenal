@@ -1,5 +1,4 @@
-from cf_client import Game, Cell
-from utils import CellIter
+from cf_client import Game, Cell, CellIter
 
 
 class DeciderAI:

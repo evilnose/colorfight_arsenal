@@ -1,0 +1,17 @@
+{
+  "dist": 5,
+  "gold": 4,
+  "energy": 6,
+  "enemy_base": 0,
+  "base": 0.1,
+  "impatience": 1,
+  "aggression": 1,
+  "own_border": 3,
+  "borders_enemy": 5,
+  "enemy_at_border": 4,
+  "build_base": false,
+  "base_coord": [30, 15],
+  "special": true,
+  "special_params": ["m", 1, 2],
+  "hunt": true
+}

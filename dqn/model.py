@@ -23,12 +23,15 @@ def build_overall_graph():
         scope_name = 'q_networks/{}'.format(i)
         q_values.append(q_network(x_state, scope=scope_name))
         trainable_params.append(tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope_name))
+
     # TODO make copy operation here
 
 
 def q_network(state, scope):
-    x = state
     with tf.variable_scope(scope):
+        x = state
+        c1 = conv2d(x, filters=8, kernel_size=(4, 4), )
+
         for filters, kernel_size, strides, padding, activation in zip(
                 CONV_FILTERS, CONV_KERNEL_SIZES, CONV_STRIDES, CONV_PADDINGS, CONV_ACTIVATIONS):
             x = conv2d(x, filters=filters, kernel_size=kernel_size, strides=strides,

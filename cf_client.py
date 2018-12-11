@@ -36,6 +36,12 @@ class Cell:
             s += "Take time is {takeTime}\n".format(takeTime=self.takeTime)
         return s
 
+    def __hash__(self):
+        return self.x * 100 + self.y
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
 
 class User:
     def __init__(self, user_data):
@@ -57,7 +63,7 @@ class User:
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, id=''):
         self.host_url = None
         self.data = None
         self.token = ''
@@ -79,6 +85,7 @@ class Game:
         self.ended = False
         self.width = None
         self.height = None
+        self.id = id
 
     def join(self, name, host_url, password=None, force=False):
         if type(name) != str:
@@ -87,8 +94,8 @@ class Game:
             raise ValueError('host_url cannot be None')
         self.host_url = host_url
 
-        if not force and os.path.isfile('token'):
-            with open('token') as f:
+        if not force and os.path.isfile('token_{}'.format(self.id)):
+            with open('token_{}'.format(self.id)) as f:
                 self.token = f.readline().strip()
             data = self.check_token(self.token)
             if data:
@@ -104,12 +111,13 @@ class Game:
         r = requests.post(host_url + 'joingame', data=json.dumps(data), headers=headers)
         if r.status_code == 200:
             data = r.json()
-            with open('token', 'w') as f:
+            if 'err_msg' in data and data['err_msg']:
+                raise ValueError('Join game failed: ' + data['err_msg'])
+            with open('token_{}'.format(self.id), 'w+') as f:
                 f.write(data['token'] + '\n')
-            self.token = data['token']
             self.uid = data['uid']
             self.data = None
-            self.refresh()
+            return self.refresh()
         else:
             raise HTTPError('joingame returned status code != 200: ' + r.status_code)
 
@@ -122,6 +130,7 @@ class Game:
             if r.status_code == 200:
                 data = r.json()
                 if data['err_code'] == 0:
+                    print('ATK ({}, {})'.format(x, y))
                     return True, None, None
                 else:
                     return False, data['err_code'], data['err_msg']
@@ -255,6 +264,14 @@ class Game:
                 return False
         return True
 
+    def has_valid_moves(self):
+        """
+        Returns whether there is any valid moves for the player
+        """
+        for c in self.cell_iter():
+            if c.isTaking and c.attacker == self.uid:  # Attacking, so can't do anything
+                return False
+        return True
 
     def check_token(self, token):
         headers = {'content-type': 'application/json'}
@@ -262,3 +279,27 @@ class Game:
         if r.status_code == 200:
             return r.json()
         return None
+
+    def cell_iter(self):
+        return CellIter(self)
+
+
+class CellIter:
+    def __init__(self, game):
+        self.g = game
+
+    def __iter__(self):
+        self.x = 0
+        self.y = 0
+        return self
+
+    def __next__(self) -> Cell:
+        if self.y >= self.g.height:
+            raise StopIteration()
+        cell = self.g.get_cell(self.x, self.y)
+        self.x += 1
+        if self.x == self.g.width:
+            self.x = 0
+            self.y += 1
+
+        return cell
